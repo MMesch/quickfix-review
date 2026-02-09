@@ -7,6 +7,10 @@ A lightweight code review system for Neovim using the built-in quickfix list and
 - **Works on normal files and diffs** - Most code review tools only work on diff views. This plugin lets you annotate any file, whether you're reviewing a PR diff or reading through a codebase.
 - **Lightweight, no dependencies** - Uses Neovim's built-in quickfix window and sign column. No external dependencies, but integrates seamlessly with diffview.nvim, fugitive, and other diff tools.
 
+## Screencast
+
+[Screencast From 2026-02-09 17-45-58.webm](https://github.com/user-attachments/assets/2c79fa02-737e-4971-9282-f62b8b596a58)
+
 ## Features
 
 - **Four comment types**: ISSUE, SUGGESTION, NOTE, PRAISE - each with distinct signs
