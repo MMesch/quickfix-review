@@ -1,0 +1,228 @@
+*quickfix-review.txt*  Code review system using quickfix and signs
+
+Author:  [Your Name]
+License: MIT
+
+==============================================================================
+CONTENTS                                              *quickfix-review-contents*
+
+    1. Introduction .......................... |quickfix-review-introduction|
+    2. Installation .......................... |quickfix-review-installation|
+    3. Configuration ......................... |quickfix-review-configuration|
+    4. Usage ................................. |quickfix-review-usage|
+    5. Commands .............................. |quickfix-review-commands|
+    6. Keymaps ............................... |quickfix-review-keymaps|
+    7. Functions ............................. |quickfix-review-functions|
+
+==============================================================================
+1. INTRODUCTION                                   *quickfix-review-introduction*
+
+quickfix-review.nvim is a lightweight code review system that uses Neovim's
+built-in quickfix list and signs to manage review comments. It supports
+regular files as well as diff buffers from diffview.nvim, fugitive, and
+similar plugins.
+
+Features:
+- Four comment types: ISSUE, SUGGESTION, NOTE, PRAISE
+- Visual signs in the gutter for each comment type
+- Export reviews to markdown format
+- Save and load reviews to/from disk
+- Works with diff buffers (diffview, fugitive, codediff)
+- Navigate between comments using quickfix commands
+
+==============================================================================
+2. INSTALLATION                                   *quickfix-review-installation*
+
+Using lazy.nvim: >lua
+    {
+      'your-username/quickfix-review.nvim',
+      config = function()
+        require('quickfix-review').setup()
+      end,
+    }
+<
+Using packer.nvim: >lua
+    use {
+      'your-username/quickfix-review.nvim',
+      config = function()
+        require('quickfix-review').setup()
+      end,
+    }
+<
+Manual installation:
+Clone the repository to your Neovim packages directory and call setup().
+
+==============================================================================
+3. CONFIGURATION                                 *quickfix-review-configuration*
+
+Call `require('quickfix-review').setup(opts)` with a table of options. All
+options are optional; defaults are shown below.
+
+>lua
+    require('quickfix-review').setup({
+      -- Storage file path for saving/loading reviews
+      storage_file = vim.fn.stdpath('data') .. '/quickfix-review.json',
+
+      -- Default export filename
+      export_file = 'quickfix-review.md',
+
+      -- Sign definitions
+      signs = {
+        issue = { text = '⚠', texthl = 'DiagnosticError' },
+        suggestion = { text = '💡', texthl = 'DiagnosticWarn' },
+        note = { text = '📝', texthl = 'DiagnosticInfo' },
+        praise = { text = '✨', texthl = 'DiagnosticHint' },
+      },
+
+      -- Export format strings
+      export = {
+        header = 'I reviewed your code and have the following comments...',
+        type_legend = 'Comment types: ISSUE, SUGGESTION, NOTE, PRAISE',
+        item_format = '%d. **[%s]** `%s:%d` - %s',
+      },
+
+      -- Keymaps (set to false to disable)
+      keymaps = {
+        add_issue = '<leader>ci',
+        add_suggestion = '<leader>cs',
+        add_note = '<leader>cn',
+        add_praise = '<leader>cp',
+        export = '<leader>ce',
+        clear = '<leader>cc',
+        summary = '<leader>cS',
+        save = '<leader>cw',
+        load = '<leader>cr',
+        open_list = '<leader>co',
+        next_comment = ']r',
+        prev_comment = '[r',
+        goto_real_file = '<leader>cg',
+      },
+    })
+<
+                                                *quickfix-review-disable-keymaps*
+To disable specific keymaps, set them to `false`: >lua
+    require('quickfix-review').setup({
+      keymaps = {
+        add_praise = false,  -- Disable this keymap
+      },
+    })
+<
+==============================================================================
+4. USAGE                                                 *quickfix-review-usage*
+
+Basic workflow:
+
+1. Open the file(s) you want to review
+2. Navigate to a line and press `<leader>ci` to add an ISSUE comment
+   (or use other comment type keymaps)
+3. Enter your comment text when prompted
+4. Repeat for all comments
+5. Press `<leader>co` to open the quickfix list and see all comments
+6. Press `<leader>ce` to export the review to markdown
+7. Optionally press `<leader>cw` to save for later
+
+Working with diff buffers:~
+
+When reviewing in diffview or fugitive diff buffers, comments are
+automatically associated with the real file path. You can use
+`<leader>cg` to jump from a diff buffer to the actual file.
+
+Navigating comments:~
+
+Use `]r` and `[r` to jump between review comments, or use the standard
+quickfix commands (`:cnext`, `:cprev`).
+
+==============================================================================
+5. COMMANDS                                           *quickfix-review-commands*
+
+                                                          *:ReviewAddIssue*
+:ReviewAddIssue         Add an ISSUE comment at the current line.
+                        Issues indicate problems that must be fixed.
+
+                                                     *:ReviewAddSuggestion*
+:ReviewAddSuggestion    Add a SUGGESTION comment at the current line.
+                        Suggestions are improvements to consider.
+
+                                                           *:ReviewAddNote*
+:ReviewAddNote          Add a NOTE comment at the current line.
+                        Notes are observations or explanations.
+
+                                                         *:ReviewAddPraise*
+:ReviewAddPraise        Add a PRAISE comment at the current line.
+                        Praise highlights good code or practices.
+
+                                                           *:ReviewExport*
+:ReviewExport           Export all comments to markdown format.
+                        Copies to clipboard and writes to file.
+
+                                                            *:ReviewClear*
+:ReviewClear            Clear all review comments and signs.
+
+                                                             *:ReviewSave*
+:ReviewSave             Save the current review to disk.
+                        Uses the configured storage_file path.
+
+                                                             *:ReviewLoad*
+:ReviewLoad             Load a previously saved review from disk.
+
+                                                          *:ReviewSummary*
+:ReviewSummary          Show a summary of comment counts by type.
+
+                                                             *:ReviewGoto*
+:ReviewGoto             Jump from a diff buffer to the real file.
+
+==============================================================================
+6. KEYMAPS                                             *quickfix-review-keymaps*
+
+Default keymaps (all in normal mode):
+
+  Keymap          Description~
+  --------------- ----------------------------------------
+  `<leader>ci`    Add ISSUE comment
+  `<leader>cs`    Add SUGGESTION comment
+  `<leader>cn`    Add NOTE comment
+  `<leader>cp`    Add PRAISE comment
+  `<leader>ce`    Export review to markdown
+  `<leader>cc`    Clear all comments
+  `<leader>cS`    Show review summary
+  `<leader>cw`    Save review to disk
+  `<leader>cr`    Load review from disk
+  `<leader>co`    Open quickfix list
+  `]r`            Next review comment
+  `[r`            Previous review comment
+  `<leader>cg`    Go to real file from diff
+
+All keymaps can be customized or disabled via configuration.
+
+==============================================================================
+7. FUNCTIONS                                         *quickfix-review-functions*
+
+The following functions are available in the `quickfix-review` module:
+
+require('quickfix-review').setup({opts})               *quickfix-review.setup()*
+    Initialize the plugin with optional configuration.
+
+require('quickfix-review').add_comment({type})         *quickfix-review.add_comment()*
+    Add a comment of the given type at the current line.
+    Type should be 'ISSUE', 'SUGGESTION', 'NOTE', or 'PRAISE'.
+
+require('quickfix-review').export_review()             *quickfix-review.export_review()*
+    Export all comments to markdown and clipboard.
+
+require('quickfix-review').clear_review()              *quickfix-review.clear_review()*
+    Clear all comments and signs.
+
+require('quickfix-review').save_review()               *quickfix-review.save_review()*
+    Save current review to the configured storage file.
+
+require('quickfix-review').load_review()               *quickfix-review.load_review()*
+    Load review from the configured storage file.
+
+require('quickfix-review').summary()                   *quickfix-review.summary()*
+    Print a summary of comment counts.
+
+require('quickfix-review').goto_real_file()            *quickfix-review.goto_real_file()*
+    Jump from a diff buffer to the actual file.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
