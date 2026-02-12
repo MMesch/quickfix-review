@@ -54,13 +54,11 @@ use {
 4. Use `]r` and `[r` to navigate between comments
 5. Press `<leader>ce` to export the review to markdown
 
-### Comment Type Cycling (Advanced)
+### Comment Type Cycling
 
 For faster workflow, use the cycling feature:
-1. Press `<leader>c ` (with space) to start cycling mode
-2. Press `<Tab>` to cycle through comment types
-3. Press `<S-Tab>` to cycle backwards
-4. Press `<Enter>` to add comment with current type
+1. Press `+` to cycle through comment types (or `-` to go backwards)
+2. Press `<leader>ca` to add a comment with the current type
 
 The current comment type is shown in the status message.
 
@@ -95,14 +93,14 @@ require('quickfix-review').setup({
   -- Prompt to clear comments when file changes on disk
   prompt_on_file_change = false,
 
-  -- Sign definitions
-  signs = {
-    issue = { text = '⚠', texthl = 'DiagnosticError' },
-    suggestion = { text = '💭', texthl = 'DiagnosticWarn' },
-    note = { text = '📝', texthl = 'DiagnosticInfo' },
-    praise = { text = '✨', texthl = 'DiagnosticHint' },
-    question = { text = '?', texthl = 'DiagnosticInfo' },
-    insight = { text = '💡', texthl = 'DiagnosticHint' },
+  -- Comment types (can be customized or extended)
+  comment_types = {
+    issue = { sign = '⚠', highlight = 'DiagnosticError', description = 'Problems to fix' },
+    suggestion = { sign = '💭', highlight = 'DiagnosticWarn', description = 'Improvements' },
+    note = { sign = '📝', highlight = 'DiagnosticInfo', description = 'Observations' },
+    praise = { sign = '✨', highlight = 'DiagnosticHint', description = 'Positive feedback' },
+    question = { sign = '?', highlight = 'DiagnosticInfo', description = 'Clarification needed' },
+    insight = { sign = '💡', highlight = 'DiagnosticHint', description = 'Useful observations' },
   },
 
   -- Keymaps (set to false to disable)
@@ -114,10 +112,10 @@ require('quickfix-review').setup({
     add_question = '<leader>cq',
     add_insight = '<leader>ck',
     
-    -- Comment type cycling (new feature)
-    add_comment_cycle = '<leader>c ',  -- Start cycling mode
-    cycle_next = '<Tab>',             -- Cycle to next type
-    cycle_previous = '<S-Tab>',         -- Cycle to previous type
+    -- Comment type cycling
+    add_comment_cycle = '<leader>ca',  -- Add comment with current cycle type
+    cycle_next = '+',                  -- Cycle to next type
+    cycle_previous = '-',              -- Cycle to previous type
     
     delete_comment = '<leader>cd',
     view = '<leader>cv',
@@ -141,6 +139,34 @@ To display multiple comment signs side by side (when a line has multiple comment
 ```lua
 vim.opt.signcolumn = "yes:2"  -- Reserve 2 columns for signs
 ```
+
+### Custom comment types
+
+You can add your own comment types or modify existing ones:
+
+```lua
+require('quickfix-review').setup({
+  comment_types = {
+    -- Keep defaults and add custom types
+    issue = { sign = '⚠', highlight = 'DiagnosticError', description = 'Problems to fix' },
+    suggestion = { sign = '💭', highlight = 'DiagnosticWarn', description = 'Improvements' },
+    note = { sign = '📝', highlight = 'DiagnosticInfo', description = 'Observations' },
+    praise = { sign = '✨', highlight = 'DiagnosticHint', description = 'Positive feedback' },
+    question = { sign = '?', highlight = 'DiagnosticInfo', description = 'Clarification needed' },
+    insight = { sign = '💡', highlight = 'DiagnosticHint', description = 'Useful observations' },
+    -- Add your own
+    security = { sign = '🔒', highlight = 'DiagnosticError', description = 'Security concern' },
+    perf = { sign = '⚡', highlight = 'DiagnosticWarn', description = 'Performance issue' },
+  },
+  keymaps = {
+    -- Add keymaps for custom types
+    add_security = '<leader>cx',
+    add_perf = '<leader>cf',
+  },
+})
+```
+
+Signs and continuation signs are auto-generated from `comment_types`. The `description` field is shown during type cycling and in the export legend.
 
 ## Commands
 

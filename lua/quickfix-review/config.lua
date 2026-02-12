@@ -41,10 +41,10 @@ M.defaults = {
     add_question = '<leader>cq',
     add_insight = '<leader>ck',
     
-    -- Comment type cycling (new feature)
-    add_comment_cycle = '<leader>c ',  -- Start cycling mode (note the space)
-    cycle_next = '<Tab>',             -- Cycle to next type
-    cycle_previous = '<S-Tab>',         -- Cycle to previous type
+    -- Comment type cycling
+    add_comment_cycle = '<leader>ca',  -- Add comment with current cycle type
+    cycle_next = '+',                  -- Cycle to next type
+    cycle_previous = '-',              -- Cycle to previous type
     
     delete_comment = '<leader>cd',
     export = '<leader>ce',

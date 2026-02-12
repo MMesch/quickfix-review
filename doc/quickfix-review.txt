@@ -23,10 +23,11 @@ regular files as well as diff buffers from diffview.nvim, fugitive, and
 similar plugins.
 
 Features:
-- Six comment types: ISSUE, SUGGESTION, NOTE, PRAISE, QUESTION, INSIGHT
-- Dynamic comment types: Users can add custom comment types via configuration
-- Comment type cycling: Fast workflow with Tab/S-Tab navigation
+- Six default comment types: ISSUE, SUGGESTION, NOTE, PRAISE, QUESTION, INSIGHT
+- Configurable comment types: Add your own or modify existing ones
+- Comment type cycling: Fast workflow with +/- navigation
 - Visual signs in the gutter for each comment type
+- Multiline comment support with visual selection
 - Export reviews to markdown format
 - Save and load reviews to/from disk
 - Works with diff buffers (diffview, fugitive, codediff)
@@ -65,22 +66,20 @@ options are optional; defaults are shown below.
       -- Storage file path for saving/loading reviews
       storage_file = vim.fn.stdpath('data') .. '/quickfix-review.json',
 
-      -- Default export filename
-      export_file = 'quickfix-review.md',
+      -- Default export filename (nil = clipboard only)
+      export_file = nil,
 
-      -- Sign definitions
-      signs = {
-        issue = { text = '⚠', texthl = 'DiagnosticError' },
-        suggestion = { text = '💡', texthl = 'DiagnosticWarn' },
-        note = { text = '📝', texthl = 'DiagnosticInfo' },
-        praise = { text = '✨', texthl = 'DiagnosticHint' },
-      },
+      -- Prompt to clear comments when file changes on disk
+      prompt_on_file_change = false,
 
-      -- Export format strings
-      export = {
-        header = 'I reviewed your code and have the following comments...',
-        type_legend = 'Comment types: ISSUE, SUGGESTION, NOTE, PRAISE, QUESTION, INSIGHT',
-        item_format = '%d. **[%s]** `%s:%d` - %s',
+      -- Comment types (can be customized or extended)
+      comment_types = {
+        issue = { sign = '⚠', highlight = 'DiagnosticError', description = 'Problems to fix' },
+        suggestion = { sign = '💭', highlight = 'DiagnosticWarn', description = 'Improvements' },
+        note = { sign = '📝', highlight = 'DiagnosticInfo', description = 'Observations' },
+        praise = { sign = '✨', highlight = 'DiagnosticHint', description = 'Positive feedback' },
+        question = { sign = '?', highlight = 'DiagnosticInfo', description = 'Clarification needed' },
+        insight = { sign = '💡', highlight = 'DiagnosticHint', description = 'Useful observations' },
       },
 
       -- Keymaps (set to false to disable)
@@ -89,6 +88,16 @@ options are optional; defaults are shown below.
         add_suggestion = '<leader>cs',
         add_note = '<leader>cn',
         add_praise = '<leader>cp',
+        add_question = '<leader>cq',
+        add_insight = '<leader>ck',
+
+        -- Comment type cycling
+        add_comment_cycle = '<leader>ca',  -- Add comment with current cycle type
+        cycle_next = '+',                  -- Cycle to next type
+        cycle_previous = '-',              -- Cycle to previous type
+
+        delete_comment = '<leader>cd',
+        view = '<leader>cv',
         export = '<leader>ce',
         clear = '<leader>cc',
         summary = '<leader>cS',
@@ -101,6 +110,26 @@ options are optional; defaults are shown below.
       },
     })
 <
+                                                *quickfix-review-comment-types*
+Custom comment types:~
+
+You can add your own comment types: >lua
+    require('quickfix-review').setup({
+      comment_types = {
+        -- Include defaults you want to keep
+        issue = { sign = '⚠', highlight = 'DiagnosticError', description = 'Problems to fix' },
+        -- Add custom types
+        security = { sign = '🔒', highlight = 'DiagnosticError', description = 'Security concern' },
+        perf = { sign = '⚡', highlight = 'DiagnosticWarn', description = 'Performance issue' },
+      },
+      keymaps = {
+        add_security = '<leader>cx',
+        add_perf = '<leader>cf',
+      },
+    })
+<
+Signs and continuation signs are auto-generated from comment_types.
+
                                                 *quickfix-review-disable-keymaps*
 To disable specific keymaps, set them to `false`: >lua
     require('quickfix-review').setup({
@@ -123,6 +152,20 @@ Basic workflow:
 6. Press `<leader>ce` to export the review to markdown
 7. Optionally press `<leader>cw` to save for later
 
+Comment type cycling:~
+
+For faster workflow, use the cycling feature:
+1. Press `+` to cycle through comment types (or `-` to go backwards)
+2. Press `<leader>ca` to add a comment with the current type
+
+The current comment type is shown in the status message.
+
+Multiline comments:~
+
+Select lines in visual mode, then press any add comment keymap to create
+a comment spanning multiple lines. Signs will mark the start and end lines
+with continuation signs on middle lines.
+
 Working with diff buffers:~
 
 When reviewing in diffview or fugitive diff buffers, comments are
@@ -133,6 +176,12 @@ Navigating comments:~
 
 Use `]r` and `[r` to jump between review comments, or use the standard
 quickfix commands (`:cnext`, `:cprev`).
+
+Deleting comments:~
+
+Use `<leader>cd` to delete comments at the current line. In visual mode,
+all comments in the selected range will be deleted. In the quickfix window,
+press `dd` to delete the comment under cursor.
 
 ==============================================================================
 5. COMMANDS                                           *quickfix-review-commands*
@@ -153,9 +202,15 @@ quickfix commands (`:cnext`, `:cprev`).
 :ReviewAddPraise        Add a PRAISE comment at the current line.
                         Praise highlights good code or practices.
 
+                                                           *:ReviewDelete*
+:ReviewDelete           Delete comment(s) at the current line.
+
+                                                             *:ReviewView*
+:ReviewView             View comment at the current line.
+
                                                            *:ReviewExport*
 :ReviewExport           Export all comments to markdown format.
-                        Copies to clipboard and writes to file.
+                        Copies to clipboard and optionally writes to file.
 
                                                             *:ReviewClear*
 :ReviewClear            Clear all review comments and signs.
@@ -176,7 +231,7 @@ quickfix commands (`:cnext`, `:cprev`).
 ==============================================================================
 6. KEYMAPS                                             *quickfix-review-keymaps*
 
-Default keymaps (all in normal mode):
+Default keymaps (normal and visual mode where applicable):
 
   Keymap          Description~
   --------------- ----------------------------------------
@@ -184,6 +239,13 @@ Default keymaps (all in normal mode):
   `<leader>cs`    Add SUGGESTION comment
   `<leader>cn`    Add NOTE comment
   `<leader>cp`    Add PRAISE comment
+  `<leader>cq`    Add QUESTION comment
+  `<leader>ck`    Add INSIGHT comment
+  `<leader>ca`    Add comment with current cycle type
+  `+`             Cycle to next comment type
+  `-`             Cycle to previous comment type
+  `<leader>cd`    Delete comment at cursor/selection
+  `<leader>cv`    View comment at cursor
   `<leader>ce`    Export review to markdown
   `<leader>cc`    Clear all comments
   `<leader>cS`    Show review summary
@@ -193,6 +255,10 @@ Default keymaps (all in normal mode):
   `]r`            Next review comment
   `[r`            Previous review comment
   `<leader>cg`    Go to real file from diff
+
+Quickfix window keymaps:
+  `dd`            Delete comment under cursor
+  `<leader>cd`    Delete comment under cursor
 
 All keymaps can be customized or disabled via configuration.
 
@@ -204,26 +270,51 @@ The following functions are available in the `quickfix-review` module:
 require('quickfix-review').setup({opts})               *quickfix-review.setup()*
     Initialize the plugin with optional configuration.
 
-require('quickfix-review').add_comment({type})         *quickfix-review.add_comment()*
-    Add a comment of the given type at the current line.
-    Type should be 'ISSUE', 'SUGGESTION', 'NOTE', or 'PRAISE'.
+require('quickfix-review').add_comment({type}, {range})
+                                                  *quickfix-review.add_comment()*
+    Add a comment of the given type at the current line or range.
+    Type should be 'ISSUE', 'SUGGESTION', 'NOTE', 'PRAISE', 'QUESTION',
+    'INSIGHT', or any custom type. Range is optional {start_line, end_line}.
 
-require('quickfix-review').export_review()             *quickfix-review.export_review()*
+require('quickfix-review').add_comment_visual({type})
+                                           *quickfix-review.add_comment_visual()*
+    Add a comment for the visual selection.
+
+require('quickfix-review').cycle_next_comment_type()
+                                       *quickfix-review.cycle_next_comment_type()*
+    Cycle to the next comment type.
+
+require('quickfix-review').cycle_previous_comment_type()
+                                   *quickfix-review.cycle_previous_comment_type()*
+    Cycle to the previous comment type.
+
+require('quickfix-review').add_comment_cycle()
+                                             *quickfix-review.add_comment_cycle()*
+    Add a comment using the current cycle type.
+
+require('quickfix-review').delete_comment({range})
+                                               *quickfix-review.delete_comment()*
+    Delete comments at the current line or range.
+
+require('quickfix-review').view_comment()           *quickfix-review.view_comment()*
+    View the comment at the current line.
+
+require('quickfix-review').export_review()         *quickfix-review.export_review()*
     Export all comments to markdown and clipboard.
 
-require('quickfix-review').clear_review()              *quickfix-review.clear_review()*
+require('quickfix-review').clear_review()           *quickfix-review.clear_review()*
     Clear all comments and signs.
 
-require('quickfix-review').save_review()               *quickfix-review.save_review()*
+require('quickfix-review').save_review()             *quickfix-review.save_review()*
     Save current review to the configured storage file.
 
-require('quickfix-review').load_review()               *quickfix-review.load_review()*
+require('quickfix-review').load_review()             *quickfix-review.load_review()*
     Load review from the configured storage file.
 
 require('quickfix-review').summary()                   *quickfix-review.summary()*
     Print a summary of comment counts.
 
-require('quickfix-review').goto_real_file()            *quickfix-review.goto_real_file()*
+require('quickfix-review').goto_real_file()       *quickfix-review.goto_real_file()*
     Jump from a diff buffer to the actual file.
 
 ==============================================================================
