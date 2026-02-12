@@ -3,16 +3,44 @@ local M = {}
 
 local COMMENT_TYPES = {'issue', 'suggestion', 'note', 'praise'}
 
+-- Namespace for extmarks (lazy initialized)
+local ns_id = nil
+
+-- Get or create the namespace ID
+function M.get_ns_id()
+  if not ns_id then
+    ns_id = vim.api.nvim_create_namespace('quickfix_review')
+  end
+  return ns_id
+end
+
+-- Store sign configuration for extmark use
+M.sign_config = {}
+
+-- Priority map for sign stacking (higher = shown first/leftmost)
+local SIGN_PRIORITY = {
+  issue = 100,
+  suggestion = 90,
+  note = 80,
+  praise = 70,
+  issue_continuation = 60,
+  suggestion_continuation = 50,
+  note_continuation = 40,
+  praise_continuation = 30,
+}
+
 -- Initialize signs based on configuration
 function M.init_signs(config)
   local signs = config.signs or {}
   for _, t in ipairs(COMMENT_TYPES) do
     if signs[t] then
       vim.fn.sign_define('review_' .. t, signs[t])
+      M.sign_config[t] = signs[t]
     end
     local cont_key = t .. '_continuation'
     if signs[cont_key] then
       vim.fn.sign_define('review_' .. cont_key, signs[cont_key])
+      M.sign_config[cont_key] = signs[cont_key]
     end
   end
 end
@@ -30,20 +58,40 @@ function M.parse_comment_type(text)
   return text:match('%[([^:%]]+)') or 'NOTE'
 end
 
--- Place signs for a comment (handles both single and multiline)
+-- Place signs for a comment using extmarks (supports multiple signs per line)
 function M.place_comment_signs(bufnr, comment_type, start_line, end_line)
   if bufnr <= 0 or vim.fn.bufexists(bufnr) ~= 1 then return end
 
-  local sign_name = 'review_' .. comment_type:lower()
-  local cont_sign = sign_name .. '_continuation'
+  local type_key = comment_type:lower()
+  local sign_cfg = M.sign_config[type_key]
+  local cont_cfg = M.sign_config[type_key .. '_continuation']
 
-  vim.fn.sign_place(0, 'review', sign_name, bufnr, { lnum = start_line })
+  if not sign_cfg then return end
 
-  if start_line ~= end_line then
+  local priority = SIGN_PRIORITY[type_key] or 50
+
+  -- Place sign at start line using extmark
+  vim.api.nvim_buf_set_extmark(bufnr, M.get_ns_id(), start_line - 1, 0, {
+    sign_text = sign_cfg.text,
+    sign_hl_group = sign_cfg.texthl,
+    priority = priority,
+  })
+
+  if start_line ~= end_line and cont_cfg then
+    local cont_priority = SIGN_PRIORITY[type_key .. '_continuation'] or 30
     for line = start_line + 1, end_line - 1 do
-      vim.fn.sign_place(0, 'review', cont_sign, bufnr, { lnum = line })
+      vim.api.nvim_buf_set_extmark(bufnr, M.get_ns_id(), line - 1, 0, {
+        sign_text = cont_cfg.text,
+        sign_hl_group = cont_cfg.texthl,
+        priority = cont_priority,
+      })
     end
-    vim.fn.sign_place(0, 'review', sign_name, bufnr, { lnum = end_line })
+    -- Place sign at end line
+    vim.api.nvim_buf_set_extmark(bufnr, M.get_ns_id(), end_line - 1, 0, {
+      sign_text = sign_cfg.text,
+      sign_hl_group = sign_cfg.texthl,
+      priority = priority,
+    })
   end
 end
 

@@ -27,9 +27,6 @@ function M.setup_test_environment()
   -- Clear any existing quickfix list
   vim.fn.setqflist({})
 
-  -- Clear any existing signs
-  vim.fn.sign_unplace('review')
-
   -- Setup the plugin with test configuration
   quickfix_review.setup({
     signs = {
@@ -71,8 +68,13 @@ function M.cleanup_test_environment()
   -- Clear quickfix list
   vim.fn.setqflist({})
 
-  -- Remove signs
-  vim.fn.sign_unplace('review')
+  -- Remove extmarks from all buffers
+  local utils = require('quickfix-review.utils')
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_valid(bufnr) then
+      vim.api.nvim_buf_clear_namespace(bufnr, utils.get_ns_id(), 0, -1)
+    end
+  end
 
   -- Clean up test files
   os.remove('test_file.txt')

@@ -63,8 +63,8 @@ require('quickfix-review').setup({
   -- Storage file for saving/loading reviews
   storage_file = vim.fn.stdpath('data') .. '/quickfix-review.json',
 
-  -- Export filename
-  export_file = 'quickfix-review.md',
+  -- Export filename (nil = clipboard only)
+  export_file = nil,
 
   -- Prompt to clear comments when file changes on disk
   prompt_on_file_change = false,
@@ -96,6 +96,14 @@ require('quickfix-review').setup({
     goto_real_file = '<leader>cg',
   },
 })
+```
+
+### Multiple signs per line
+
+To display multiple comment signs side by side (when a line has multiple comments), configure your signcolumn:
+
+```lua
+vim.opt.signcolumn = "yes:2"  -- Reserve 2 columns for signs
 ```
 
 ## Commands

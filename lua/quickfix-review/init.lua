@@ -123,7 +123,12 @@ end
 -- Clear all review comments
 function M.clear_review()
   vim.fn.setqflist({})
-  vim.fn.sign_unplace('review')
+  -- Clear extmarks from all buffers
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_valid(bufnr) then
+      vim.api.nvim_buf_clear_namespace(bufnr, utils.get_ns_id(), 0, -1)
+    end
+  end
   print('Review cleared')
 end
 
@@ -248,7 +253,8 @@ function M.delete_comment(range)
     -- Remove and re-add signs for proper visualization
     if not utils.is_special_buffer() then
       local bufnr = vim.fn.bufnr()
-      vim.fn.sign_unplace('review', { buffer = bufnr })
+      -- Clear extmarks for this buffer
+      vim.api.nvim_buf_clear_namespace(bufnr, utils.get_ns_id(), 0, -1)
 
       -- Re-add signs for remaining comments in this file
       for _, item in ipairs(new_qf_list) do

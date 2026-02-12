@@ -1,6 +1,7 @@
 -- Tests for sign placement
 local test_helper = dofile('test/init.lua')
 local assert = dofile('test/assertions.lua')
+local utils = require('quickfix-review.utils')
 
 print('\nRunning sign tests...')
 
@@ -18,24 +19,49 @@ line 9
 line 10
 ]])
 
-local function get_signs_on_line(bufnr, lnum)
-  local signs = vim.fn.sign_getplaced(bufnr, { group = 'review', lnum = lnum })
-  if signs and signs[1] and signs[1].signs then
-    return signs[1].signs
-  end
-  return {}
+-- Get extmarks on a specific line (0-indexed internally, 1-indexed for callers)
+local function get_extmarks_on_line(bufnr, lnum)
+  local marks = vim.api.nvim_buf_get_extmarks(bufnr, utils.get_ns_id(), { lnum - 1, 0 }, { lnum - 1, -1 }, { details = true })
+  return marks
 end
 
 local function has_sign_on_line(bufnr, lnum)
-  return #get_signs_on_line(bufnr, lnum) > 0
+  return #get_extmarks_on_line(bufnr, lnum) > 0
 end
 
+-- Get the sign text from extmarks on a line (maps back to sign name for compatibility)
 local function get_sign_name_on_line(bufnr, lnum)
-  local signs = get_signs_on_line(bufnr, lnum)
-  if #signs > 0 then
-    return signs[1].name
+  local marks = get_extmarks_on_line(bufnr, lnum)
+  if #marks > 0 then
+    local details = marks[1][4]
+    local sign_text = details and details.sign_text
+    if not sign_text then return nil end
+    -- Trim whitespace from sign_text (Neovim pads to 2 cells)
+    sign_text = sign_text:gsub('%s+$', ''):gsub('^%s+', '')
+    -- Map sign text back to sign name (test config uses ASCII: !, ?, N, +, |)
+    local sign_mapping = {
+      ['!'] = 'review_issue',
+      ['?'] = 'review_suggestion',
+      ['N'] = 'review_note',
+      ['+'] = 'review_praise',
+    }
+    if sign_text == '|' then
+      -- Check highlight to determine continuation type
+      local hl = details.sign_hl_group
+      if hl == 'DiagnosticError' then return 'review_issue_continuation'
+      elseif hl == 'DiagnosticWarn' then return 'review_suggestion_continuation'
+      elseif hl == 'DiagnosticInfo' then return 'review_note_continuation'
+      elseif hl == 'DiagnosticHint' then return 'review_praise_continuation'
+      end
+    end
+    return sign_mapping[sign_text]
   end
   return nil
+end
+
+-- Helper to clear extmarks (replaces sign_unplace)
+local function clear_extmarks(bufnr)
+  vim.api.nvim_buf_clear_namespace(bufnr, utils.get_ns_id(), 0, -1)
 end
 
 assert.run_test('sign definitions exist', function()
@@ -54,7 +80,7 @@ end)
 
 assert.run_test('single line comment places one sign', function()
   vim.fn.setqflist({})
-  vim.fn.sign_unplace('review')
+  clear_extmarks(vim.fn.bufnr())
   local bufnr = vim.fn.bufnr()
 
   vim.fn.cursor(5, 1)
@@ -67,7 +93,7 @@ end)
 
 assert.run_test('multiline comment places signs on all lines', function()
   vim.fn.setqflist({})
-  vim.fn.sign_unplace('review')
+  clear_extmarks(vim.fn.bufnr())
   local bufnr = vim.fn.bufnr()
 
   qf.add_comment('ISSUE', { 3, 7 })
@@ -88,7 +114,7 @@ end)
 
 assert.run_test('continuation signs on middle lines', function()
   vim.fn.setqflist({})
-  vim.fn.sign_unplace('review')
+  clear_extmarks(vim.fn.bufnr())
   local bufnr = vim.fn.bufnr()
 
   qf.add_comment('ISSUE', { 2, 6 })
@@ -108,7 +134,7 @@ end)
 
 assert.run_test('deleting comment removes signs', function()
   vim.fn.setqflist({})
-  vim.fn.sign_unplace('review')
+  clear_extmarks(vim.fn.bufnr())
   local bufnr = vim.fn.bufnr()
 
   vim.fn.cursor(5, 1)
@@ -121,7 +147,7 @@ end)
 
 assert.run_test('deleting multiline comment removes all signs', function()
   vim.fn.setqflist({})
-  vim.fn.sign_unplace('review')
+  clear_extmarks(vim.fn.bufnr())
   local bufnr = vim.fn.bufnr()
 
   qf.add_comment('ISSUE', { 3, 6 })
@@ -137,7 +163,7 @@ end)
 
 assert.run_test('clear_review removes all signs', function()
   vim.fn.setqflist({})
-  vim.fn.sign_unplace('review')
+  clear_extmarks(vim.fn.bufnr())
   local bufnr = vim.fn.bufnr()
 
   vim.fn.cursor(2, 1)
@@ -155,7 +181,7 @@ end)
 
 assert.run_test('different comment types use correct signs', function()
   vim.fn.setqflist({})
-  vim.fn.sign_unplace('review')
+  clear_extmarks(vim.fn.bufnr())
   local bufnr = vim.fn.bufnr()
 
   vim.fn.cursor(2, 1)
