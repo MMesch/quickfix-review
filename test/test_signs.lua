@@ -49,7 +49,7 @@ local function get_sign_name_on_line(bufnr, lnum)
       ['Q'] = 'review_question',
       ['I'] = 'review_insight',
     }
-    if sign_text == '|' then
+    if sign_text == '│' then
       -- Check highlight to determine continuation type
       local hl = details.sign_hl_group
       if hl == 'DiagnosticError' then return 'review_issue_continuation'
