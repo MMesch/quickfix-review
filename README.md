@@ -75,6 +75,7 @@ require('quickfix-review').setup({
     suggestion = { text = '💡', texthl = 'DiagnosticWarn' },
     note = { text = '📝', texthl = 'DiagnosticInfo' },
     praise = { text = '✨', texthl = 'DiagnosticHint' },
+    question = { text = '?', texthl = 'DiagnosticInfo' },
   },
 
   -- Keymaps (set to false to disable)
@@ -83,6 +84,7 @@ require('quickfix-review').setup({
     add_suggestion = '<leader>cs',
     add_note = '<leader>cn',
     add_praise = '<leader>cp',
+    add_question = '<leader>cq',
     delete_comment = '<leader>cd',
     view = '<leader>cv',
     export = '<leader>ce',
