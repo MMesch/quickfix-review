@@ -326,6 +326,12 @@ local function setup_keymaps()
     vim.keymap.set('v', keymaps.add_praise, function() M.add_comment_visual('PRAISE') end,
       { desc = 'Add PRAISE comment for selection' })
   end
+  if keymaps.add_question then
+    vim.keymap.set('n', keymaps.add_question, function() M.add_comment('QUESTION') end,
+      { desc = 'Add QUESTION comment' })
+    vim.keymap.set('v', keymaps.add_question, function() M.add_comment_visual('QUESTION') end,
+      { desc = 'Add QUESTION comment for selection' })
+  end
   
   -- Add keymaps for comment deletion
   if keymaps.delete_comment then
