@@ -15,7 +15,8 @@ This tool was inspired by:
 
 ## Features
 
-- **Six comment types**: ISSUE, SUGGESTION, NOTE, PRAISE, QUESTION, INSIGHT - each with distinct signs
+- **Six default comment types**: ISSUE, SUGGESTION, NOTE, PRAISE, QUESTION, INSIGHT
+- **Customizable comment types**: Add your own or replace defaults entirely
 - **Visual gutter signs**: See review comments at a glance
 - **Diff buffer support**: Works also on diffbuffers
 - **Export to markdown**: Share reviews with formatted output
