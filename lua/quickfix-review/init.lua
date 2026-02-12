@@ -380,43 +380,19 @@ end
 local function setup_keymaps()
   local keymaps = config.options.keymaps
 
-  if keymaps.add_issue then
-    vim.keymap.set('n', keymaps.add_issue, function() M.add_comment('ISSUE') end,
-      { desc = 'Add ISSUE comment' })
-    vim.keymap.set('v', keymaps.add_issue, function() M.add_comment_visual('ISSUE') end,
-      { desc = 'Add ISSUE comment for selection' })
+  -- Dynamically set up keymaps for each comment type
+  for type_name, _ in pairs(config.options.comment_types) do
+    local keymap_key = 'add_' .. type_name
+    local keymap = keymaps[keymap_key]
+    if keymap then
+      local type_upper = type_name:upper()
+      vim.keymap.set('n', keymap, function() M.add_comment(type_upper) end,
+        { desc = 'Add ' .. type_upper .. ' comment' })
+      vim.keymap.set('v', keymap, function() M.add_comment_visual(type_upper) end,
+        { desc = 'Add ' .. type_upper .. ' comment for selection' })
+    end
   end
-  if keymaps.add_suggestion then
-    vim.keymap.set('n', keymaps.add_suggestion, function() M.add_comment('SUGGESTION') end,
-      { desc = 'Add SUGGESTION comment' })
-    vim.keymap.set('v', keymaps.add_suggestion, function() M.add_comment_visual('SUGGESTION') end,
-      { desc = 'Add SUGGESTION comment for selection' })
-  end
-  if keymaps.add_note then
-    vim.keymap.set('n', keymaps.add_note, function() M.add_comment('NOTE') end,
-      { desc = 'Add NOTE comment' })
-    vim.keymap.set('v', keymaps.add_note, function() M.add_comment_visual('NOTE') end,
-      { desc = 'Add NOTE comment for selection' })
-  end
-  if keymaps.add_praise then
-    vim.keymap.set('n', keymaps.add_praise, function() M.add_comment('PRAISE') end,
-      { desc = 'Add PRAISE comment' })
-    vim.keymap.set('v', keymaps.add_praise, function() M.add_comment_visual('PRAISE') end,
-      { desc = 'Add PRAISE comment for selection' })
-  end
-  if keymaps.add_question then
-    vim.keymap.set('n', keymaps.add_question, function() M.add_comment('QUESTION') end,
-      { desc = 'Add QUESTION comment' })
-    vim.keymap.set('v', keymaps.add_question, function() M.add_comment_visual('QUESTION') end,
-      { desc = 'Add QUESTION comment for selection' })
-  end
-  if keymaps.add_insight then
-    vim.keymap.set('n', keymaps.add_insight, function() M.add_comment('INSIGHT') end,
-      { desc = 'Add INSIGHT comment' })
-    vim.keymap.set('v', keymaps.add_insight, function() M.add_comment_visual('INSIGHT') end,
-      { desc = 'Add INSIGHT comment for selection' })
-  end
-  
+
   -- Add keymaps for comment type cycling
   if keymaps.add_comment_cycle then
     vim.keymap.set('n', keymaps.add_comment_cycle, M.add_comment_cycle,

@@ -93,30 +93,21 @@ require('quickfix-review').setup({
   -- Prompt to clear comments when file changes on disk
   prompt_on_file_change = false,
 
-  -- Comment types (can be customized or extended)
-  comment_types = {
-    issue = { sign = '⚠', highlight = 'DiagnosticError', description = 'Problems to fix' },
-    suggestion = { sign = '💭', highlight = 'DiagnosticWarn', description = 'Improvements' },
-    note = { sign = '📝', highlight = 'DiagnosticInfo', description = 'Observations' },
-    praise = { sign = '✨', highlight = 'DiagnosticHint', description = 'Positive feedback' },
-    question = { sign = '?', highlight = 'DiagnosticInfo', description = 'Clarification needed' },
-    insight = { sign = '💡', highlight = 'DiagnosticHint', description = 'Useful observations' },
-  },
+  -- Comment types: replaces all defaults if provided (see Custom comment types)
+  -- comment_types = { ... },
+
+  -- Additional comment types: merged with defaults
+  -- additional_comment_types = { ... },
 
   -- Keymaps (set to false to disable)
+  -- Default type keymaps: add_issue, add_suggestion, add_note,
+  --   add_praise, add_question, add_insight (all <leader>c + first letter)
   keymaps = {
-    add_issue = '<leader>ci',
-    add_suggestion = '<leader>cs',
-    add_note = '<leader>cn',
-    add_praise = '<leader>cp',
-    add_question = '<leader>cq',
-    add_insight = '<leader>ck',
-    
     -- Comment type cycling
     add_comment_cycle = '<leader>ca',  -- Add comment with current cycle type
     cycle_next = '+',                  -- Cycle to next type
     cycle_previous = '-',              -- Cycle to previous type
-    
+
     delete_comment = '<leader>cd',
     view = '<leader>cv',
     export = '<leader>ce',
@@ -142,31 +133,37 @@ vim.opt.signcolumn = "yes:2"  -- Reserve 2 columns for signs
 
 ### Custom comment types
 
-You can add your own comment types or modify existing ones:
+To **add** types while keeping defaults, use `additional_comment_types`:
 
 ```lua
 require('quickfix-review').setup({
-  comment_types = {
-    -- Keep defaults and add custom types
-    issue = { sign = '⚠', highlight = 'DiagnosticError', description = 'Problems to fix' },
-    suggestion = { sign = '💭', highlight = 'DiagnosticWarn', description = 'Improvements' },
-    note = { sign = '📝', highlight = 'DiagnosticInfo', description = 'Observations' },
-    praise = { sign = '✨', highlight = 'DiagnosticHint', description = 'Positive feedback' },
-    question = { sign = '?', highlight = 'DiagnosticInfo', description = 'Clarification needed' },
-    insight = { sign = '💡', highlight = 'DiagnosticHint', description = 'Useful observations' },
-    -- Add your own
+  additional_comment_types = {
     security = { sign = '🔒', highlight = 'DiagnosticError', description = 'Security concern' },
     perf = { sign = '⚡', highlight = 'DiagnosticWarn', description = 'Performance issue' },
   },
   keymaps = {
-    -- Add keymaps for custom types
     add_security = '<leader>cx',
     add_perf = '<leader>cf',
   },
 })
 ```
 
-Signs and continuation signs are auto-generated from `comment_types`. The `description` field is shown during type cycling and in the export legend.
+To **replace** defaults entirely, use `comment_types`:
+
+```lua
+require('quickfix-review').setup({
+  comment_types = {
+    bug = { sign = '🐛', highlight = 'DiagnosticError', description = 'Bug' },
+    idea = { sign = '💡', highlight = 'DiagnosticInfo', description = 'Idea' },
+  },
+  keymaps = {
+    add_bug = '<leader>cb',
+    add_idea = '<leader>ci',
+  },
+})
+```
+
+Signs and continuation signs are auto-generated. The `description` field is shown during type cycling and in the export legend.
 
 ## Commands
 
