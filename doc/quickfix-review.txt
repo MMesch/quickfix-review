@@ -24,6 +24,8 @@ similar plugins.
 
 Features:
 - Six comment types: ISSUE, SUGGESTION, NOTE, PRAISE, QUESTION, INSIGHT
+- Dynamic comment types: Users can add custom comment types via configuration
+- Comment type cycling: Fast workflow with Tab/S-Tab navigation
 - Visual signs in the gutter for each comment type
 - Export reviews to markdown format
 - Save and load reviews to/from disk

@@ -29,19 +29,13 @@ function M.setup_test_environment()
 
   -- Setup the plugin with test configuration
   quickfix_review.setup({
-    signs = {
-      issue = { text = '!', texthl = 'DiagnosticError' },
-      suggestion = { text = 'S', texthl = 'DiagnosticWarn' },
-      note = { text = 'N', texthl = 'DiagnosticInfo' },
-      praise = { text = '+', texthl = 'DiagnosticHint' },
-      question = { text = 'Q', texthl = 'DiagnosticInfo' },
-      insight = { text = 'I', texthl = 'DiagnosticHint' },
-      issue_continuation = { text = '|', texthl = 'DiagnosticError' },
-      suggestion_continuation = { text = '|', texthl = 'DiagnosticWarn' },
-      note_continuation = { text = '|', texthl = 'DiagnosticInfo' },
-      praise_continuation = { text = '|', texthl = 'DiagnosticHint' },
-      question_continuation = { text = '|', texthl = 'DiagnosticInfo' },
-      insight_continuation = { text = '|', texthl = 'DiagnosticHint' },
+    comment_types = {
+      issue = { sign = '!', highlight = 'DiagnosticError', description = 'Problems' },
+      suggestion = { sign = 'S', highlight = 'DiagnosticWarn', description = 'Improvements' },
+      note = { sign = 'N', highlight = 'DiagnosticInfo', description = 'Observations' },
+      praise = { sign = '+', highlight = 'DiagnosticHint', description = 'Positive' },
+      question = { sign = 'Q', highlight = 'DiagnosticInfo', description = 'Questions' },
+      insight = { sign = 'I', highlight = 'DiagnosticHint', description = 'Insights' }
     },
     keymaps = {
       add_issue = false,

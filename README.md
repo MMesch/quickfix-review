@@ -54,6 +54,16 @@ use {
 4. Use `]r` and `[r` to navigate between comments
 5. Press `<leader>ce` to export the review to markdown
 
+### Comment Type Cycling (Advanced)
+
+For faster workflow, use the cycling feature:
+1. Press `<leader>c ` (with space) to start cycling mode
+2. Press `<Tab>` to cycle through comment types
+3. Press `<S-Tab>` to cycle backwards
+4. Press `<Enter>` to add comment with current type
+
+The current comment type is shown in the status message.
+
 ## Configuration
 
 All options are optional. Here's the full configuration with defaults:
@@ -87,6 +97,12 @@ require('quickfix-review').setup({
     add_praise = '<leader>cp',
     add_question = '<leader>cq',
     add_insight = '<leader>ck',
+    
+    -- Comment type cycling (new feature)
+    add_comment_cycle = '<leader>c ',  -- Start cycling mode
+    cycle_next = '<Tab>',             -- Cycle to next type
+    cycle_previous = '<S-Tab>',         -- Cycle to previous type
+    
     delete_comment = '<leader>cd',
     view = '<leader>cv',
     export = '<leader>ce',

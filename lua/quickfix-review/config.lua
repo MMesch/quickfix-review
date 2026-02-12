@@ -12,27 +12,23 @@ M.defaults = {
   -- Prompt to clear comments when file changes on disk
   prompt_on_file_change = false,
 
-  -- Sign definitions
-  signs = {
-    issue = { text = '⚠', texthl = 'DiagnosticError' },
-    suggestion = { text = '💭', texthl = 'DiagnosticWarn' },
-    note = { text = '📝', texthl = 'DiagnosticInfo' },
-    praise = { text = '✨', texthl = 'DiagnosticHint' },
-    question = { text = '?', texthl = 'DiagnosticInfo' },
-    insight = { text = '💡', texthl = 'DiagnosticHint' },
-    -- Continuation signs for multiline comments (vertical bars)
-    issue_continuation = { text = '│', texthl = 'DiagnosticError' },
-    suggestion_continuation = { text = '│', texthl = 'DiagnosticWarn' },
-    note_continuation = { text = '│', texthl = 'DiagnosticInfo' },
-    praise_continuation = { text = '│', texthl = 'DiagnosticHint' },
-    question_continuation = { text = '│', texthl = 'DiagnosticInfo' },
-    insight_continuation = { text = '│', texthl = 'DiagnosticHint' },
+  -- Comment type definitions (can be extended by users)
+  comment_types = {
+    issue = { sign = '⚠', highlight = 'DiagnosticError', description = 'Problems to fix' },
+    suggestion = { sign = '💭', highlight = 'DiagnosticWarn', description = 'Improvements' },
+    note = { sign = '📝', highlight = 'DiagnosticInfo', description = 'Observations' },
+    praise = { sign = '✨', highlight = 'DiagnosticHint', description = 'Positive feedback' },
+    question = { sign = '?', highlight = 'DiagnosticInfo', description = 'Clarification needed' },
+    insight = { sign = '💡', highlight = 'DiagnosticHint', description = 'Useful observations' }
   },
+
+  -- Sign definitions (generated from comment_types, but can be overridden)
+  signs = {},
 
   -- Export format strings
   export = {
     header = '# Code Review\n\n',
-    type_legend = 'Comment types: ISSUE (problems to fix), SUGGESTION (improvements), NOTE (observations), PRAISE (positive feedback), QUESTION (clarification needed), INSIGHT (useful observations)\n',
+    type_legend = '',  -- Generated dynamically from comment_types
     item_format = '%d. **[%s]** `%s:%d` - %s',
   },
 
@@ -44,6 +40,12 @@ M.defaults = {
     add_praise = '<leader>cp',
     add_question = '<leader>cq',
     add_insight = '<leader>ck',
+    
+    -- Comment type cycling (new feature)
+    add_comment_cycle = '<leader>c ',  -- Start cycling mode (note the space)
+    cycle_next = '<Tab>',             -- Cycle to next type
+    cycle_previous = '<S-Tab>',         -- Cycle to previous type
+    
     delete_comment = '<leader>cd',
     export = '<leader>ce',
     clear = '<leader>cc',
@@ -64,22 +66,38 @@ M.options = {}
 -- Setup configuration by merging user options with defaults
 function M.setup(opts)
   local user_opts = opts or {}
-  user_opts.signs = user_opts.signs or {}
-
-  -- Ensure continuation signs are defined (use defaults if not provided)
-  local highlights = {
-    issue = 'DiagnosticError', suggestion = 'DiagnosticWarn',
-    note = 'DiagnosticInfo', praise = 'DiagnosticHint', question = 'DiagnosticInfo', insight = 'DiagnosticHint'
-  }
-  for t, hl in pairs(highlights) do
-    local key = t .. '_continuation'
-    if not user_opts.signs[key] then
-      user_opts.signs[key] = { text = '│', texthl = hl }
+  
+  -- Start with defaults and then merge user options on top
+  M.options = vim.tbl_deep_extend('force', {}, M.defaults, user_opts)
+  
+  -- Generate signs from comment_types if not explicitly overridden
+  if not user_opts.signs or vim.tbl_isempty(user_opts.signs) then
+    M.options.signs = {}
+    
+    -- Generate main signs and continuation signs from comment_types
+    for type_name, type_config in pairs(M.options.comment_types) do
+      -- Main sign
+      M.options.signs[type_name] = {
+        text = type_config.sign,
+        texthl = type_config.highlight
+      }
+      
+      -- Continuation sign
+      local cont_key = type_name .. '_continuation'
+      M.options.signs[cont_key] = {
+        text = '│',
+        texthl = type_config.highlight
+      }
     end
   end
+  
+  -- Generate type legend for export
+  local type_descriptions = {}
+  for type_name, type_config in pairs(M.options.comment_types) do
+    table.insert(type_descriptions, type_name:upper() .. ' (' .. type_config.description .. ')')
+  end
+  M.options.export.type_legend = 'Comment types: ' .. table.concat(type_descriptions, ', ') .. '\n'
 
-  M.options = vim.tbl_deep_extend('force', {}, M.defaults, user_opts)
-  return M.options
+  return M
 end
-
 return M

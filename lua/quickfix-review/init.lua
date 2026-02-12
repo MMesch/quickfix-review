@@ -7,15 +7,89 @@ local utils = require('quickfix-review.utils')
 local storage = require('quickfix-review.storage')
 local export = require('quickfix-review.export')
 
+-- State for comment type cycling
+local cycle_state = {
+  current_index = 1,
+  comment_types = nil
+}
+
+-- Reset cycle state based on current configuration
+local function reset_cycle_state()
+  cycle_state.comment_types = utils.get_comment_types()
+  cycle_state.current_index = 1
+end
+
+-- Get current comment type for cycling
+local function get_current_cycle_type()
+  if not cycle_state.comment_types then
+    reset_cycle_state()
+  end
+  return cycle_state.comment_types[cycle_state.current_index]
+end
+
+-- Cycle to next comment type
+function M.cycle_next_comment_type()
+  if not cycle_state.comment_types then
+    reset_cycle_state()
+  end
+  
+  cycle_state.current_index = cycle_state.current_index + 1
+  if cycle_state.current_index > #cycle_state.comment_types then
+    cycle_state.current_index = 1
+  end
+  
+  local current_type = get_current_cycle_type()
+  print('Comment type: ' .. current_type:upper() .. ' (' .. (config.options.comment_types[current_type].description or '') .. ')')
+  return current_type
+end
+
+-- Cycle to previous comment type
+function M.cycle_previous_comment_type()
+  if not cycle_state.comment_types then
+    reset_cycle_state()
+  end
+  
+  cycle_state.current_index = cycle_state.current_index - 1
+  if cycle_state.current_index < 1 then
+    cycle_state.current_index = #cycle_state.comment_types
+  end
+  
+  local current_type = get_current_cycle_type()
+  print('Comment type: ' .. current_type:upper() .. ' (' .. (config.options.comment_types[current_type].description or '') .. ')')
+  return current_type
+end
+
+-- Add comment using current cycle type
+function M.add_comment_cycle()
+  local current_type = get_current_cycle_type()
+  M.add_comment(current_type)
+end
+
 -- Add comment to quickfix and place sign
 -- Optional range parameter: { start_line, end_line } for multiline comments
 function M.add_comment(comment_type, range)
+  -- Validate comment type (ensure config is loaded)
+  if not config.options or not config.options.comment_types then
+    print('Error: Plugin not properly initialized. Call require("quickfix-review").setup() first.')
+    return
+  end
+  
+  local type_config = utils.get_comment_type_config(comment_type)
+  if not type_config then
+    print('Error: Unknown comment type: ' .. comment_type)
+    return
+  end
+
   local file = utils.get_real_filepath()
   local start_line, end_line
 
   if range then
     start_line = range[1]
     end_line = range[2]
+    -- Ensure start_line is less than or equal to end_line
+    if start_line > end_line then
+      start_line, end_line = end_line, start_line
+    end
   else
     start_line = vim.fn.line('.')
     end_line = start_line
@@ -221,6 +295,10 @@ function M.delete_comment(range)
   if range then
     start_line = range[1]
     end_line = range[2]
+    -- Ensure start_line is less than or equal to end_line
+    if start_line > end_line then
+      start_line, end_line = end_line, start_line
+    end
   else
     start_line = vim.fn.line('.')
     end_line = start_line
@@ -337,6 +415,24 @@ local function setup_keymaps()
       { desc = 'Add INSIGHT comment' })
     vim.keymap.set('v', keymaps.add_insight, function() M.add_comment_visual('INSIGHT') end,
       { desc = 'Add INSIGHT comment for selection' })
+  end
+  
+  -- Add keymaps for comment type cycling
+  if keymaps.add_comment_cycle then
+    vim.keymap.set('n', keymaps.add_comment_cycle, M.add_comment_cycle,
+      { desc = 'Add comment (cycle types with Tab)' })
+    vim.keymap.set('v', keymaps.add_comment_cycle, function() M.add_comment_visual(get_current_cycle_type()) end,
+      { desc = 'Add comment for selection (cycle types with Tab)' })
+  end
+  
+  if keymaps.cycle_next then
+    vim.keymap.set('n', keymaps.cycle_next, M.cycle_next_comment_type,
+      { desc = 'Cycle to next comment type' })
+  end
+  
+  if keymaps.cycle_previous then
+    vim.keymap.set('n', keymaps.cycle_previous, M.cycle_previous_comment_type,
+      { desc = 'Cycle to previous comment type' })
   end
   
   -- Add keymaps for comment deletion
@@ -475,5 +571,8 @@ function M.setup(opts)
     end
   })
 end
+
+-- Export config for external access
+M.config = config
 
 return M

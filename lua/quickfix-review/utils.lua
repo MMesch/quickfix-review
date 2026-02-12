@@ -1,7 +1,6 @@
 -- Utility functions for quickfix-review.nvim
 local M = {}
-
-local COMMENT_TYPES = {'issue', 'suggestion', 'note', 'praise', 'question', 'insight'}
+local config = require('quickfix-review.config')
 
 -- Namespace for extmarks (lazy initialized)
 local ns_id = nil
@@ -17,35 +16,47 @@ end
 -- Store sign configuration for extmark use
 M.sign_config = {}
 
+-- Get comment types dynamically from configuration
+function M.get_comment_types()
+  return vim.tbl_keys(config.options.comment_types)
+end
+
+-- Get configuration for a specific comment type
+function M.get_comment_type_config(type_name)
+  return config.options.comment_types[type_name:lower()]
+end
+
 -- Priority map for sign stacking (lower than git signs which typically use 6-10)
-local SIGN_PRIORITY = {
-  issue = 5,
-  suggestion = 4,
-  note = 3,
-  praise = 2,
-  question = 2,
-  insight = 2,
-  issue_continuation = 1,
-  suggestion_continuation = 1,
-  note_continuation = 1,
-  praise_continuation = 1,
-  question_continuation = 1,
-  insight_continuation = 1,
-}
+-- Generated dynamically based on comment types
+function M.get_sign_priority(type_name)
+  -- Base priority based on type importance
+  local type_config = M.get_comment_type_config(type_name)
+  if not type_config then return 50 end
+  
+  -- Map highlight groups to priorities
+  local priority_map = {
+    DiagnosticError = 5,
+    DiagnosticWarn = 4,
+    DiagnosticInfo = 3,
+    DiagnosticHint = 2
+  }
+  
+  local base_priority = priority_map[type_config.highlight] or 3
+  
+  -- Continuation signs get lower priority
+  if type_name:find('_continuation$') then
+    return 1
+  end
+  
+  return base_priority
+end
 
 -- Initialize signs based on configuration
 function M.init_signs(config)
   local signs = config.signs or {}
-  for _, t in ipairs(COMMENT_TYPES) do
-    if signs[t] then
-      vim.fn.sign_define('review_' .. t, signs[t])
-      M.sign_config[t] = signs[t]
-    end
-    local cont_key = t .. '_continuation'
-    if signs[cont_key] then
-      vim.fn.sign_define('review_' .. cont_key, signs[cont_key])
-      M.sign_config[cont_key] = signs[cont_key]
-    end
+  for type_name, sign_def in pairs(signs) do
+    vim.fn.sign_define('review_' .. type_name, sign_def)
+    M.sign_config[type_name] = sign_def
   end
 end
 
@@ -72,7 +83,7 @@ function M.place_comment_signs(bufnr, comment_type, start_line, end_line)
 
   if not sign_cfg then return end
 
-  local priority = SIGN_PRIORITY[type_key] or 50
+  local priority = M.get_sign_priority(type_key) or 50
 
   -- Place sign at start line using extmark
   vim.api.nvim_buf_set_extmark(bufnr, M.get_ns_id(), start_line - 1, 0, {
@@ -82,7 +93,7 @@ function M.place_comment_signs(bufnr, comment_type, start_line, end_line)
   })
 
   if start_line ~= end_line and cont_cfg then
-    local cont_priority = SIGN_PRIORITY[type_key .. '_continuation'] or 30
+    local cont_priority = M.get_sign_priority(type_key .. '_continuation') or 30
     for line = start_line + 1, end_line - 1 do
       vim.api.nvim_buf_set_extmark(bufnr, M.get_ns_id(), line - 1, 0, {
         sign_text = cont_cfg.text,
